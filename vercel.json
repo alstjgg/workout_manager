@@ -4,11 +4,6 @@
   "devCommand": "npm start",
   "installCommand": "npm ci --prefer-offline --no-audit --no-fund --timeout 300000",
   "framework": "create-react-app",
-  "functions": {
-    "app/api/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/(.*)",
