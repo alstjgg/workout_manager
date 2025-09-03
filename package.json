@@ -3,18 +3,23 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.30",
+    "@modelcontextprotocol/server-github": "^2025.4.8",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "corepack": "^0.32.0",
     "lucide-react": "^0.263.1",
+    "npm": "^10.9.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "vercel": "^46.1.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "react-scripts test --watchAll=false",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -35,17 +40,7 @@
       "last 1 safari version"
     ]
   },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
-  },
-  "overrides": {
-    "abab": "^2.0.6",
-    "rimraf": "^5.0.7",
-    "glob": "^10.4.5",
-    "inflight": "^1.0.6"
-  },
   "devDependencies": {
-    "react-scripts": "^0.0.0"
+    "react-scripts": "^5.0.1"
   }
 }
