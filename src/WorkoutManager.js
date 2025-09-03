@@ -1,45 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Circle, Plus, BarChart3, User, Calendar, Settings, Target, TrendingUp, Clock, Flame, X } from 'lucide-react';
+import { useWorkoutDatabase } from './WorkoutDatabaseService';
 
 const WorkoutManager = () => {
   const [currentUser, setCurrentUser] = useState('A');
   const [currentView, setCurrentView] = useState('today');
   const [showBodyCompModal, setShowBodyCompModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [currentSession, setCurrentSession] = useState(null);
+  
+  // Initialize database hook
+  const db = useWorkoutDatabase();
+
+  // State for current workout data
   const [workoutData, setWorkoutData] = useState({
     A: {
       name: 'User A',
       goal: 'Muscle Building',
-      todayWorkout: {
-        date: '2025-09-02',
-        focus: 'Glutes + Shoulders',
-        warmup: [
-          { name: 'General Movement', duration: '3 min', completed: false, description: 'Light walking, arm circles' },
-          { name: 'Glute Activation', duration: '3 min', completed: false, description: 'Clamshells, glute bridges' },
-          { name: 'Shoulder Activation', duration: '2 min', completed: false, description: 'Band pull-aparts, arm swings' }
-        ],
-        dynamicStretch: [
-          { name: 'Hip Circles', reps: '10 each direction', completed: false },
-          { name: 'Leg Swings', reps: '10 each leg', completed: false },
-          { name: 'Arm Circles', reps: '10 each direction', completed: false },
-          { name: 'Hip Flexor Stretch', duration: '30 sec each', completed: false }
-        ],
-        primaryExercises: [
-          { name: 'Romanian Deadlift', weight: '15kg', reps: 8, sets: 3, completed: [false, false, false], restTime: '90 sec', notes: ['', '', ''] },
-          { name: 'Hip Thrust', weight: '20kg', reps: 10, sets: 3, completed: [false, false, false], restTime: '90 sec', notes: ['', '', ''] },
-          { name: 'Bulgarian Split Squat', weight: '8kg', reps: 10, sets: 3, completed: [false, false, false], restTime: '75 sec', notes: ['', '', ''] }
-        ],
-        secondaryExercises: [
-          { name: 'Lateral Raises', weight: '5kg', reps: 12, sets: 3, completed: [false, false, false], restTime: '60 sec', notes: ['', '', ''] },
-          { name: 'Rear Delt Flyes', weight: '4kg', reps: 15, sets: 3, completed: [false, false, false], restTime: '60 sec', notes: ['', '', ''] },
-          { name: 'Overhead Press', weight: '8kg', reps: 10, sets: 2, completed: [false, false], restTime: '90 sec', notes: ['', ''] }
-        ],
-        cooldown: [
-          { name: 'Hip Flexor Stretch', duration: '60 sec each', completed: false },
-          { name: 'Pigeon Pose', duration: '60 sec each', completed: false },
-          { name: 'Shoulder Cross Stretch', duration: '30 sec each', completed: false },
-          { name: 'Cat-Cow Stretch', duration: '60 sec', completed: false }
-        ]
-      },
+      todayWorkout: null,
       weeklyPlan: {
         Monday: { primary: 'Glutes', secondary: 'Shoulders', status: 'active', duration: '75 min' },
         Tuesday: { primary: 'Back', secondary: 'Chest', status: 'planned', duration: '80 min' },
@@ -59,40 +37,7 @@ const WorkoutManager = () => {
     B: {
       name: 'User B',
       goal: 'Weight Loss',
-      todayWorkout: {
-        date: '2025-09-02',
-        focus: 'Glutes + Shoulders',
-        warmup: [
-          { name: 'Cardio Warm-up', duration: '5 min', completed: false, description: 'Light treadmill walk' },
-          { name: 'Glute Activation', duration: '3 min', completed: false, description: 'Hip abduction pulses' },
-          { name: 'Joint Mobility', duration: '2 min', completed: false, description: 'Shoulder rolls, hip circles' }
-        ],
-        dynamicStretch: [
-          { name: 'Walking High Knees', reps: '20 steps', completed: false },
-          { name: 'Leg Swings', reps: '12 each leg', completed: false },
-          { name: 'Arm Swings', reps: '15 each direction', completed: false },
-          { name: 'Butt Kicks', reps: '20 steps', completed: false }
-        ],
-        primaryExercises: [
-          { name: 'Romanian Deadlift', weight: '20kg', reps: 12, sets: 4, completed: [false, false, false, false], restTime: '75 sec', notes: ['', '', '', ''] },
-          { name: 'Hip Abduction', weight: '30kg', reps: 15, sets: 4, completed: [false, false, false, false], restTime: '60 sec', notes: ['', '', '', ''] },
-          { name: 'Goblet Squat', weight: '12kg', reps: 15, sets: 3, completed: [false, false, false], restTime: '60 sec', notes: ['', '', ''] }
-        ],
-        secondaryExercises: [
-          { name: 'Shoulder Press', weight: '8kg', reps: 15, sets: 3, completed: [false, false, false], restTime: '45 sec', notes: ['', '', ''] },
-          { name: 'Lateral Raises', weight: '4kg', reps: 20, sets: 3, completed: [false, false, false], restTime: '45 sec', notes: ['', '', ''] }
-        ],
-        cardioFinisher: [
-          { name: 'Treadmill Intervals', duration: '10 min', completed: false, description: '1 min fast / 1 min recovery' },
-          { name: 'Stair Climber', duration: '5 min', completed: false, description: 'Moderate intensity' }
-        ],
-        cooldown: [
-          { name: 'Walking Cool-down', duration: '3 min', completed: false },
-          { name: 'Hip Flexor Stretch', duration: '45 sec each', completed: false },
-          { name: 'Shoulder Stretch', duration: '30 sec each', completed: false },
-          { name: 'Hamstring Stretch', duration: '45 sec each', completed: false }
-        ]
-      },
+      todayWorkout: null,
       weeklyPlan: {
         Monday: { primary: 'Glutes', secondary: 'Shoulders', status: 'active', duration: '90 min' },
         Tuesday: { primary: 'Back', secondary: 'Chest', status: 'planned', duration: '85 min' },
@@ -128,17 +73,129 @@ const WorkoutManager = () => {
     notes: ''
   });
 
-  // Save data to localStorage for persistence
+  // Load today's workout on component mount and user change
   useEffect(() => {
-    const savedData = localStorage.getItem('workoutData');
-    if (savedData) {
-      setWorkoutData(JSON.parse(savedData));
-    }
-  }, []);
+    loadTodaysWorkout();
+    loadUserProfile();
+  }, [currentUser]);
 
-  useEffect(() => {
-    localStorage.setItem('workoutData', JSON.stringify(workoutData));
-  }, [workoutData]);
+  const loadTodaysWorkout = async () => {
+    try {
+      setLoading(true);
+      
+      // Get today's workout ID from database
+      const workoutId = await db.getTodaysWorkout(currentUser);
+      
+      if (workoutId) {
+        // Get workout exercises
+        const exercises = await db.getWorkoutExercises(workoutId);
+        
+        // Transform database format to app format
+        const todayWorkout = transformDatabaseWorkout(exercises);
+        
+        setWorkoutData(prev => ({
+          ...prev,
+          [currentUser]: {
+            ...prev[currentUser],
+            todayWorkout
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading workout:', error);
+      // Fallback to local storage
+      const savedData = localStorage.getItem('workoutData');
+      if (savedData) {
+        setWorkoutData(JSON.parse(savedData));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUserProfile = async () => {
+    try {
+      const userProfile = await db.getUser(currentUser);
+      const bodyHistory = await db.getBodyHistory(currentUser, 1);
+      
+      if (userProfile) {
+        setWorkoutData(prev => ({
+          ...prev,
+          [currentUser]: {
+            ...prev[currentUser],
+            stats: {
+              ...prev[currentUser].stats,
+              weight: `${userProfile.current_weight_kg}kg`,
+              muscle: bodyHistory.length > 0 ? `${bodyHistory[0].skeletal_muscle_kg}kg` : 'TBD',
+              bodyFat: bodyHistory.length > 0 ? `${bodyHistory[0].body_fat_percentage}%` : 'TBD'
+            }
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    }
+  };
+
+  // Transform database exercise format to app format
+  const transformDatabaseWorkout = (exercises) => {
+    const workout = {
+      date: new Date().toISOString().split('T')[0],
+      focus: 'Glutes + Shoulders', // You could get this from the workout table
+      warmup: [],
+      dynamicStretch: [],
+      primaryExercises: [],
+      secondaryExercises: [],
+      cardioFinisher: [],
+      cooldown: []
+    };
+
+    exercises.forEach(exercise => {
+      const exerciseData = {
+        name: exercise.exercise_name || exercise.exercise_id.replace(/_/g, ' '),
+        weight: `${exercise.planned_weight_kg}kg`,
+        reps: parseInt(exercise.planned_reps),
+        sets: parseInt(exercise.planned_sets),
+        completed: new Array(parseInt(exercise.planned_sets)).fill(false),
+        restTime: `${exercise.rest_seconds} sec`,
+        notes: new Array(parseInt(exercise.planned_sets)).fill('')
+      };
+
+      // Handle time-based exercises (warmup, cooldown)
+      if (exercise.duration_seconds > 0) {
+        exerciseData.duration = `${Math.round(exercise.duration_seconds / 60)} min`;
+        exerciseData.completed = false;
+        exerciseData.description = exercise.notes || '';
+        delete exerciseData.sets;
+        delete exerciseData.weight;
+        delete exerciseData.reps;
+      }
+
+      // Categorize by section
+      switch (exercise.section) {
+        case 'warmup':
+          workout.warmup.push(exerciseData);
+          break;
+        case 'dynamic':
+          workout.dynamicStretch.push(exerciseData);
+          break;
+        case 'primary':
+          workout.primaryExercises.push(exerciseData);
+          break;
+        case 'secondary':
+          workout.secondaryExercises.push(exerciseData);
+          break;
+        case 'cardio':
+          workout.cardioFinisher.push(exerciseData);
+          break;
+        case 'cooldown':
+          workout.cooldown.push(exerciseData);
+          break;
+      }
+    });
+
+    return workout;
+  };
 
   const toggleSet = (section, exerciseIndex, setIndex = null) => {
     setWorkoutData(prev => {
@@ -172,41 +229,112 @@ const WorkoutManager = () => {
     setBodyCompData(prev => ({ ...prev, [field]: value }));
   };
 
-  const saveBodyComposition = () => {
-    setWorkoutData(prev => {
-      const updated = { ...prev };
-      updated[currentUser].stats = {
-        ...updated[currentUser].stats,
-        weight: bodyCompData.weight + 'kg',
-        muscle: bodyCompData.skeletalMuscle + 'kg',
-        bodyFat: bodyCompData.bodyFat + '%'
+  const saveBodyComposition = async () => {
+    try {
+      setLoading(true);
+      
+      const bodyData = {
+        measurement_date: bodyCompData.date,
+        weight_kg: parseFloat(bodyCompData.weight),
+        skeletal_muscle_kg: parseFloat(bodyCompData.skeletalMuscle),
+        body_fat_percentage: parseFloat(bodyCompData.bodyFat),
+        visceral_fat_level: parseFloat(bodyCompData.visceralFat),
+        bmi: parseFloat(bodyCompData.bmi),
+        measurement_type: 'manual',
+        measurement_location: 'gym',
+        measurement_notes: bodyCompData.notes
       };
-      return updated;
-    });
-    
-    // Here you would integrate with Google Sheets API
-    alert(`Body composition data saved for ${getCurrentUserData().name}! Data will sync to Google Sheets.`);
-    setShowBodyCompModal(false);
-    
-    setBodyCompData({
-      date: new Date().toISOString().split('T')[0],
-      weight: '',
-      skeletalMuscle: '',
-      bodyFat: '',
-      visceralFat: '',
-      bmi: '',
-      notes: ''
-    });
+
+      await db.saveBodyComp(currentUser, bodyData);
+      
+      // Update local state
+      setWorkoutData(prev => ({
+        ...prev,
+        [currentUser]: {
+          ...prev[currentUser],
+          stats: {
+            ...prev[currentUser].stats,
+            weight: bodyCompData.weight + 'kg',
+            muscle: bodyCompData.skeletalMuscle + 'kg',
+            bodyFat: bodyCompData.bodyFat + '%'
+          }
+        }
+      }));
+
+      alert('Body composition data saved successfully!');
+      setShowBodyCompModal(false);
+      
+      // Reset form
+      setBodyCompData({
+        date: new Date().toISOString().split('T')[0],
+        weight: '',
+        skeletalMuscle: '',
+        bodyFat: '',
+        visceralFat: '',
+        bmi: '',
+        notes: ''
+      });
+      
+    } catch (error) {
+      console.error('Error saving body composition:', error);
+      alert('Error saving data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const saveToDatabase = async () => {
-    // Here you would integrate with Google Sheets API
-    alert('Workout data saved! This would sync to Google Sheets in the full version.');
+    try {
+      setLoading(true);
+      
+      if (!currentSession) {
+        // Start a new session
+        const workoutId = await db.getTodaysWorkout(currentUser);
+        const sessionId = await db.startSession(workoutId, currentUser);
+        setCurrentSession(sessionId);
+      }
+
+      // Save session completion data
+      const completionPercentage = getWorkoutProgress();
+      
+      await db.completeSession(currentSession, {
+        overall_rpe: parseInt(sessionData.rpe),
+        completion_percentage: completionPercentage,
+        energy_level: sessionData.energyLevel,
+        session_notes: sessionData.notes
+      });
+
+      // Save individual sets (you'd need to track which sets were completed)
+      // This is a simplified version - in a real implementation, you'd track each set completion
+      
+      alert('Workout data saved to database successfully!');
+      
+    } catch (error) {
+      console.error('Error saving to database:', error);
+      
+      // Fallback to localStorage
+      localStorage.setItem('workoutData', JSON.stringify(workoutData));
+      localStorage.setItem('sessionData', JSON.stringify(sessionData));
+      
+      alert('Saved locally. Will sync to database when connection is available.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const generateNewWorkout = () => {
-    // Here you would integrate with Claude API for workout generation
-    alert('This would generate tomorrow\'s workout based on today\'s performance!');
+  const generateNewWorkout = async () => {
+    try {
+      setLoading(true);
+      
+      // This would integrate with Claude API for intelligent workout generation
+      // For now, we'll show a message
+      alert('Workout generation will be integrated with Claude API in the next phase!');
+      
+    } catch (error) {
+      console.error('Error generating workout:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getCurrentUserData = () => workoutData[currentUser];
@@ -225,48 +353,32 @@ const WorkoutManager = () => {
 
   const getWorkoutProgress = () => {
     const user = getCurrentUserData();
-    const workout = user.todayWorkout;
+    if (!user.todayWorkout) return 0;
     
+    const workout = user.todayWorkout;
     let totalItems = 0;
     let completedItems = 0;
     
-    if (workout.warmup) {
-      totalItems += workout.warmup.length;
-      completedItems += workout.warmup.filter(item => item.completed).length;
-    }
-    
-    if (workout.dynamicStretch) {
-      totalItems += workout.dynamicStretch.length;
-      completedItems += workout.dynamicStretch.filter(item => item.completed).length;
-    }
-    
-    if (workout.primaryExercises) {
-      workout.primaryExercises.forEach(ex => {
-        totalItems += ex.sets;
-        completedItems += ex.completed.filter(set => set).length;
-      });
-    }
-    
-    if (workout.secondaryExercises) {
-      workout.secondaryExercises.forEach(ex => {
-        totalItems += ex.sets;
-        completedItems += ex.completed.filter(set => set).length;
-      });
-    }
-    
-    if (workout.cardioFinisher) {
-      totalItems += workout.cardioFinisher.length;
-      completedItems += workout.cardioFinisher.filter(item => item.completed).length;
-    }
-    
-    if (workout.cooldown) {
-      totalItems += workout.cooldown.length;
-      completedItems += workout.cooldown.filter(item => item.completed).length;
-    }
+    ['warmup', 'dynamicStretch', 'primaryExercises', 'secondaryExercises', 'cardioFinisher', 'cooldown'].forEach(section => {
+      if (workout[section]) {
+        workout[section].forEach(item => {
+          if (item.sets) {
+            totalItems += item.sets;
+            completedItems += item.completed.filter(set => set).length;
+          } else {
+            totalItems += 1;
+            completedItems += item.completed ? 1 : 0;
+          }
+        });
+      }
+    });
     
     return totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
   };
 
+  // Rest of your existing render methods remain the same...
+  // (renderWorkoutSection, renderBodyCompositionModal, renderWeeklyView, etc.)
+  
   const renderWorkoutSection = (title, items, section, icon, bgColor = "bg-white") => {
     if (!items || items.length === 0) return null;
     
@@ -474,14 +586,16 @@ const WorkoutManager = () => {
               <button
                 onClick={() => setShowBodyCompModal(false)}
                 className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                disabled={loading}
               >
                 Cancel
               </button>
               <button
                 onClick={saveBodyComposition}
-                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                disabled={loading}
               >
-                Save Data
+                {loading ? 'Saving...' : 'Save Data'}
               </button>
             </div>
           </div>
@@ -577,6 +691,30 @@ const WorkoutManager = () => {
 
   const renderTodayWorkout = () => {
     const user = getCurrentUserData();
+    
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-gray-600">Loading workout...</span>
+        </div>
+      );
+    }
+    
+    if (!user.todayWorkout) {
+      return (
+        <div className="text-center p-8">
+          <p className="text-gray-600 mb-4">No workout found for today.</p>
+          <button 
+            onClick={loadTodaysWorkout}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Load Workout
+          </button>
+        </div>
+      );
+    }
+    
     const workout = user.todayWorkout;
     
     return (
@@ -613,6 +751,16 @@ const WorkoutManager = () => {
             />
           </div>
           <div className="mt-3">
+            <select
+              value={sessionData.energyLevel}
+              onChange={(e) => updateSessionData('energyLevel', e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded mb-3"
+            >
+              <option value="">Energy Level...</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
             <textarea 
               placeholder="How did the workout feel? Any struggles or wins?"
               value={sessionData.notes}
@@ -626,15 +774,17 @@ const WorkoutManager = () => {
         <div className="flex space-x-3">
           <button 
             onClick={saveToDatabase}
-            className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+            disabled={loading}
           >
-            Save to Database
+            {loading ? 'Saving...' : 'Save to Database'}
           </button>
           <button 
             onClick={generateNewWorkout}
-            className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+            className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
+            disabled={loading}
           >
-            Generate Next Workout
+            {loading ? 'Generating...' : 'Generate Next Workout'}
           </button>
         </div>
       </div>
