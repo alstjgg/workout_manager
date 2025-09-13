@@ -1,0 +1,42 @@
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import router from './router'
+import App from './App.vue'
+import './assets/css/main.css'
+
+// Create Vue application
+const app = createApp(App)
+
+// Add global error handler
+app.config.errorHandler = (err, vm, info) => {
+  console.error('Vue error:', err, info)
+}
+
+// Add global warning handler
+app.config.warnHandler = (msg, vm, trace) => {
+  console.warn('Vue warning:', msg, trace)
+}
+
+// Use plugins
+app.use(createPinia())
+app.use(router)
+
+// Mount the application
+app.mount('#app')
+
+// Add loaded class to show app after Vue has mounted
+const appElement = document.getElementById('app')
+if (appElement) {
+  appElement.classList.add('loaded')
+  console.log('✅ Workout Manager app loaded successfully')
+} else {
+  console.error('❌ Could not find #app element')
+}
+
+// Error handling for unhandled promises
+window.addEventListener('unhandledrejection', event => {
+  console.error('Unhandled promise rejection:', event.reason)
+  event.preventDefault()
+})
+
+console.log('🏋️‍♀️ Workout Manager initialized with full functionality')

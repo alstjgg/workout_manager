@@ -1,0 +1,186 @@
+<template>
+    <div id="app" class="min-h-screen bg-gray-50">
+      <!-- User Selector Header -->
+      <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-screen-sm mx-auto px-4 py-3">
+          <UserSelector />
+        </div>
+      </header>
+  
+      <!-- Main Content Area -->
+      <main class="max-w-screen-sm mx-auto px-4 pb-20">
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </main>
+  
+      <!-- Bottom Navigation -->
+      <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-inset-bottom">
+        <div class="max-w-screen-sm mx-auto px-4">
+          <div class="flex justify-around py-2">
+            <router-link
+              v-for="tab in navigationTabs"
+              :key="tab.name"
+              :to="tab.path"
+              class="flex flex-col items-center py-2 px-3 text-xs font-medium rounded-lg transition-colors touch-target"
+              :class="isActiveTab(tab.path) ? activeTabClass : inactiveTabClass"
+            >
+              <component :is="tab.icon" class="w-6 h-6 mb-1" />
+              <span>{{ tab.name }}</span>
+            </router-link>
+          </div>
+        </div>
+      </nav>
+  
+      <!-- Global Loading Overlay -->
+      <div v-if="isLoading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-sm mx-4">
+          <div class="flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2" :class="currentUserBorderColor"></div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">{{ loadingMessage }}</h3>
+              <p class="text-sm text-gray-600">Please wait...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Error Toast -->
+      <transition name="slide-up">
+        <div v-if="errorMessage" class="fixed bottom-24 left-4 right-4 z-50">
+          <div class="bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+              <span class="text-sm font-medium">{{ errorMessage }}</span>
+            </div>
+            <button @click="clearError" class="text-white hover:text-red-200">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </transition>
+  
+      <!-- Offline Indicator -->
+      <div v-if="shouldShowOfflineIndicator" class="fixed top-16 left-4 right-4 z-40">
+        <div class="bg-orange-500 text-white px-4 py-2 rounded-lg shadow-lg text-center">
+          <span class="text-sm font-medium">📴 Offline - Data will sync when reconnected</span>
+        </div>
+      </div>
+    </div>
+  </template>
+  
+  <script setup>
+  import { computed, onMounted } from 'vue'
+  import { useRoute } from 'vue-router'
+  import { useUserStore } from '@/stores/userStore'
+  import { useAppStore } from '@/stores/appStore'
+  
+  // Components
+  import UserSelector from '@/components/common/UserSelector.vue'
+  
+  // Icons (using simple SVG for now, will add proper icons later)
+  const HomeIcon = { template: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>' }
+  const CalendarIcon = { template: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>' }
+  const ChartBarIcon = { template: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>' }
+  
+  // Stores
+  const userStore = useUserStore()
+  const appStore = useAppStore()
+  const route = useRoute()
+  
+  // Navigation configuration
+  const navigationTabs = [
+    { name: 'Today', path: '/', icon: HomeIcon },
+    { name: 'Week', path: '/week', icon: CalendarIcon },
+    { name: 'Progress', path: '/progress', icon: ChartBarIcon }
+  ]
+  
+  // Computed properties
+  const currentUser = computed(() => userStore.currentUser)
+  const isLoading = computed(() => appStore.isLoading)
+  const loadingMessage = computed(() => appStore.loadingMessage)
+  const errorMessage = computed(() => appStore.errorMessage)
+  const shouldShowOfflineIndicator = computed(() => appStore.shouldShowOfflineIndicator)
+  
+  const currentUserBorderColor = computed(() => {
+    return currentUser.value === 'A' ? 'border-purple-500' : 'border-pink-500'
+  })
+  
+  const activeTabClass = computed(() => {
+    const baseClass = 'text-white'
+    return currentUser.value === 'A' 
+      ? `${baseClass} bg-purple-500` 
+      : `${baseClass} bg-pink-500`
+  })
+  
+  const inactiveTabClass = 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+  
+  // Methods
+  const isActiveTab = (path) => {
+    return route.path === path
+  }
+  
+  const clearError = () => {
+    appStore.clearError()
+  }
+  
+  // Lifecycle
+  onMounted(() => {
+    console.log('🏋️‍♀️ Workout Manager App initialized')
+    
+    // Initialize app data
+    appStore.initializeApp()
+    
+    // Set up global event listeners
+    window.addEventListener('online', () => {
+      console.log('🌐 App is online')
+      appStore.setOnlineStatus(true)
+    })
+    
+    window.addEventListener('offline', () => {
+      console.log('📴 App is offline')
+      appStore.setOnlineStatus(false)
+    })
+  })
+  </script>
+  
+  <style scoped>
+  /* Transitions */
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity 0.3s ease;
+  }
+  
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
+  }
+  
+  .slide-up-enter-active,
+  .slide-up-leave-active {
+    transition: all 0.3s ease;
+  }
+  
+  .slide-up-enter-from,
+  .slide-up-leave-to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  
+  /* Safe area handling */
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Touch targets */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  </style>
